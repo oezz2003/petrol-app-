@@ -3,6 +3,7 @@
 -- =====================================================
 -- This schema supports a comprehensive admin dashboard
 -- for managing drilling operations and HSE activities
+-- New Version: Updated for 9-step wizard with enhanced data fields
 -- =====================================================
 
 -- =====================================================
@@ -35,11 +36,32 @@ CREATE INDEX idx_users_status ON users(status);
 
 CREATE TABLE wells (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- Step 1: Basic Data
     name VARCHAR(255) NOT NULL,
     location VARCHAR(255) NOT NULL,
     rig_id VARCHAR(100) NOT NULL,
     rig_name VARCHAR(255),
     notes TEXT,
+    
+    -- Step 4: Additional Details (Personnel)
+    operator_name VARCHAR(255),
+    supervisor_name VARCHAR(255),
+    
+    -- Step 5: Equipment Inspection
+    drilling_rig_model VARCHAR(255),
+    mud_pumps VARCHAR(255),
+    blowout_preventer TEXT,
+    
+    -- Step 6: Environmental Data
+    temperature DECIMAL(5,2),  -- in Celsius
+    wind_speed DECIMAL(5,2),   -- in km/h
+    weather_conditions VARCHAR(100),
+    soil_type VARCHAR(100),
+    
+    -- Step 8: Final Comments
+    final_comments TEXT,
+    
+    -- Well Status
     status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'in_progress', 'completed', 'suspended', 'abandoned')),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -93,8 +115,9 @@ CREATE INDEX idx_safety_checklist_well ON well_safety_checklist(well_id);
 CREATE TABLE well_photos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     well_id UUID NOT NULL REFERENCES wells(id) ON DELETE CASCADE,
-    photo_url TEXT NOT NULL,
+    photo_url TEXT NOT NULL,  -- Local file URI or cloud storage URL
     caption TEXT,
+    file_size_bytes BIGINT,  -- File size in bytes
     uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     metadata JSONB DEFAULT '{}'
@@ -109,8 +132,9 @@ CREATE INDEX idx_well_photos_well ON well_photos(well_id);
 CREATE TABLE well_voice_notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     well_id UUID NOT NULL REFERENCES wells(id) ON DELETE CASCADE,
-    audio_url TEXT NOT NULL,
-    duration_seconds INTEGER,
+    audio_url TEXT NOT NULL,  -- Local file URI or cloud storage URL
+    duration_seconds INTEGER NOT NULL,
+    file_size_bytes BIGINT,  -- File size in bytes
     transcription TEXT,
     recorded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -360,7 +384,7 @@ CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_setting
 -- =====================================================
 
 COMMENT ON TABLE users IS 'Application users including admins, managers, field engineers, and HSE officers';
-COMMENT ON TABLE wells IS 'Drilling well records with lifecycle tracking';
+COMMENT ON TABLE wells IS 'Drilling well records with 9-step wizard data including personnel, equipment, and environmental information';
 COMMENT ON TABLE safety_checklist_templates IS 'Pre-defined safety checklist items for well operations';
 COMMENT ON TABLE well_safety_checklist IS 'Completed safety checklists for specific wells';
 COMMENT ON TABLE well_photos IS 'Photos attached to well records';
