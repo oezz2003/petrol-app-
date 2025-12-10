@@ -66,23 +66,73 @@
       "last_login_at": "2025-12-02T15:00:00Z"
     }
   ],
-  "safety_checklist_templates": [
-    { "id": "check-001", "name": "Rig inspection completed", "description": "Complete visual inspection of rig structure and components", "is_required": true, "display_order": 1, "is_active": true },
-    { "id": "check-002", "name": "PPE checked and verified", "description": "Verify all personal protective equipment is present and in good condition", "is_required": true, "display_order": 2, "is_active": true },
-    { "id": "check-003", "name": "Tools inspected", "description": "Inspect all tools for damage and proper function", "is_required": true, "display_order": 3, "is_active": true },
-    { "id": "check-004", "name": "Safety briefing conducted", "description": "Conduct safety briefing with all crew members", "is_required": true, "display_order": 4, "is_active": true },
-    { "id": "check-005", "name": "Emergency equipment verified", "description": "Check first aid kits, fire extinguishers, and emergency exits", "is_required": false, "display_order": 5, "is_active": true },
-    { "id": "check-006", "name": "Communication systems tested", "description": "Test radios and emergency communication systems", "is_required": false, "display_order": 6, "is_active": true },
-    { "id": "check-007", "name": "Weather conditions assessed", "description": "Review weather forecast and assess suitability for operations", "is_required": true, "display_order": 7, "is_active": true },
-    { "id": "check-008", "name": "Permits verified", "description": "Verify all necessary work permits are in place", "is_required": true, "display_order": 8, "is_active": true }
+  "projects": [
+    {
+      "id": "proj-001",
+      "country": "Oman",
+      "name": "Marmul",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "proj-002",
+      "country": "Oman",
+      "name": "Qarn Alam",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "proj-003",
+      "country": "Saudi",
+      "name": "Dammam",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "units": [
+    {
+      "id": "unit-001",
+      "project_id": "proj-001",
+      "unit_type": "Rig",
+      "unit_number": "Rig 148",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "unit-002",
+      "project_id": "proj-001",
+      "unit_type": "Rig",
+      "unit_number": "Rig 149",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "unit-003",
+      "project_id": "proj-002",
+      "unit_type": "HFBU",
+      "unit_number": "HFBU-12",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": "unit-004",
+      "project_id": "proj-002",
+      "unit_type": "Rigless",
+      "unit_number": "Hoist-5",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
   ],
   "wells": [
     {
       "id": "well-001",
       "name": "Well Alpha-7",
       "location": "Site A, Block 12",
-      "rig_id": "RIG-001",
-      "rig_name": "Desert Falcon",
+      "unit_id": "unit-001",
+      "rig_name": "Rig 148",
+      "well_type": "Development",
+      "well_shape": "Vertical",
+      "surface_coordinates": "21.45, 55.32",
       "notes": "Initial exploration well in Block 12",
       "status": "in_progress",
       "created_by": "user-engineer-001",
@@ -96,8 +146,11 @@
       "id": "well-002",
       "name": "Well Beta-3",
       "location": "Site B, Block 15",
-      "rig_id": "RIG-002",
-      "rig_name": "Ocean Pioneer",
+      "unit_id": "unit-002",
+      "rig_name": "Rig 149",
+      "well_type": "Exploration",
+      "well_shape": "Deviated (J shape)",
+      "surface_coordinates": "21.55, 55.42",
       "notes": "Production well with high yield expectations",
       "status": "completed",
       "created_by": "user-engineer-001",
@@ -111,8 +164,11 @@
       "id": "well-003",
       "name": "Well Gamma-5",
       "location": "Site C, Block 08",
-      "rig_id": "RIG-003",
-      "rig_name": "Mountain Eagle",
+      "unit_id": "unit-003",
+      "rig_name": "HFBU-12",
+      "well_type": "Workover",
+      "well_shape": "Vertical",
+      "surface_coordinates": "21.65, 55.52",
       "notes": "Exploratory well in new field",
       "status": "draft",
       "created_by": "user-engineer-002",
@@ -126,8 +182,11 @@
       "id": "well-004",
       "name": "Well Delta-9",
       "location": "Site A, Block 13",
-      "rig_id": "RIG-001",
-      "rig_name": "Desert Falcon",
+      "unit_id": "unit-001",
+      "rig_name": "Rig 148",
+      "well_type": "Development",
+      "well_shape": "Horizontal",
+      "surface_coordinates": "21.46, 55.33",
       "notes": "Secondary well near Alpha-7",
       "status": "completed",
       "created_by": "user-engineer-001",
@@ -141,8 +200,11 @@
       "id": "well-005",
       "name": "Well Epsilon-12",
       "location": "Site D, Block 22",
-      "rig_id": "RIG-004",
-      "rig_name": "Valley Titan",
+      "unit_id": "unit-004",
+      "rig_name": "Hoist-5",
+      "well_type": "Maintenance",
+      "well_shape": "Vertical",
+      "surface_coordinates": "21.75, 55.62",
       "notes": "Deep formation drilling",
       "status": "in_progress",
       "created_by": "user-engineer-002",
@@ -156,8 +218,11 @@
       "id": "well-006",
       "name": "Well Zeta-4",
       "location": "Site B, Block 16",
-      "rig_id": "RIG-002",
-      "rig_name": "Ocean Pioneer",
+      "unit_id": "unit-002",
+      "rig_name": "Rig 149",
+      "well_type": "Exploration",
+      "well_shape": "Deviated (S shape)",
+      "surface_coordinates": "21.56, 55.43",
       "notes": "Offshore production well",
       "status": "suspended",
       "created_by": "user-engineer-001",
@@ -171,8 +236,11 @@
       "id": "well-007",
       "name": "Well Eta-1",
       "location": "Site E, Block 30",
-      "rig_id": "RIG-005",
-      "rig_name": "Plains Runner",
+      "unit_id": "unit-001",
+      "rig_name": "Rig 148",
+      "well_type": "Development",
+      "well_shape": "Vertical",
+      "surface_coordinates": "21.85, 55.72",
       "notes": "First well in new concession area",
       "status": "draft",
       "created_by": "user-engineer-002",
@@ -186,8 +254,11 @@
       "id": "well-008",
       "name": "Well Theta-6",
       "location": "Site A, Block 11",
-      "rig_id": "RIG-001",
-      "rig_name": "Desert Falcon",
+      "unit_id": "unit-001",
+      "rig_name": "Rig 148",
+      "well_type": "Development",
+      "well_shape": "Vertical",
+      "surface_coordinates": "21.47, 55.34",
       "notes": "Replacement well for abandoned location",
       "status": "completed",
       "created_by": "user-engineer-001",
@@ -198,17 +269,248 @@
       "updated_at": "2025-10-05T18:00:00Z"
     }
   ],
+  "well_sections": [
+    {
+      "id": "sect-001",
+      "well_id": "well-001",
+      "section_name": "Surface Section (17.5\")",
+      "hole_size": 17.5,
+      "casing_size": 13.375,
+      "target_depth": 500,
+      "status": "completed",
+      "started_at": "2025-11-28T08:00:00Z",
+      "completed_at": "2025-11-30T18:00:00Z",
+      "created_at": "2025-11-28T08:00:00Z",
+      "updated_at": "2025-11-30T18:00:00Z"
+    },
+    {
+      "id": "sect-002",
+      "well_id": "well-001",
+      "section_name": "Intermediate Section (12.25\")",
+      "hole_size": 12.25,
+      "casing_size": 9.625,
+      "target_depth": 1500,
+      "status": "drilling",
+      "started_at": "2025-12-01T06:00:00Z",
+      "completed_at": null,
+      "created_at": "2025-12-01T06:00:00Z",
+      "updated_at": "2025-12-02T10:00:00Z"
+    }
+  ],
+  "checklists": [
+    {
+      "id": "cl-001",
+      "well_id": "well-001",
+      "section_id": "sect-001",
+      "type": "Pre-spud",
+      "status": "completed",
+      "data": {
+        "items": [
+          {
+            "name": "Rig Inspection",
+            "checked": true
+          },
+          {
+            "name": "Safety Meeting",
+            "checked": true
+          }
+        ]
+      },
+      "submitted_by": "user-engineer-001",
+      "submitted_at": "2025-11-28T07:30:00Z",
+      "created_at": "2025-11-28T07:00:00Z",
+      "updated_at": "2025-11-28T07:30:00Z"
+    },
+    {
+      "id": "cl-002",
+      "well_id": "well-001",
+      "section_id": "sect-002",
+      "type": "BHA",
+      "status": "completed",
+      "data": {
+        "items": [
+          {
+            "name": "Bit Photo",
+            "checked": true
+          },
+          {
+            "name": "Stabilizer Photo",
+            "checked": true
+          }
+        ]
+      },
+      "photos": [
+        {
+          "url": "https://example.com/bit.jpg",
+          "caption": "Bit #452"
+        }
+      ],
+      "submitted_by": "user-engineer-001",
+      "submitted_at": "2025-12-01T05:30:00Z",
+      "created_at": "2025-12-01T05:00:00Z",
+      "updated_at": "2025-12-01T05:30:00Z"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "app-001",
+      "entity_type": "section",
+      "entity_id": "sect-001",
+      "approval_type": "TD Confirmation",
+      "status": "approved",
+      "approver_email": "client@example.com",
+      "approved_at": "2025-11-30T16:00:00Z",
+      "evidence_url": "https://example.com/email-approval.png",
+      "comments": "TD confirmed at 502m",
+      "created_at": "2025-11-30T15:00:00Z",
+      "updated_at": "2025-11-30T16:00:00Z"
+    }
+  ],
+  "safety_checklist_templates": [
+    {
+      "id": "check-001",
+      "name": "Rig inspection completed",
+      "description": "Complete visual inspection of rig structure and components",
+      "is_required": true,
+      "display_order": 1,
+      "is_active": true
+    },
+    {
+      "id": "check-002",
+      "name": "PPE checked and verified",
+      "description": "Verify all personal protective equipment is present and in good condition",
+      "is_required": true,
+      "display_order": 2,
+      "is_active": true
+    },
+    {
+      "id": "check-003",
+      "name": "Tools inspected",
+      "description": "Inspect all tools for damage and proper function",
+      "is_required": true,
+      "display_order": 3,
+      "is_active": true
+    },
+    {
+      "id": "check-004",
+      "name": "Safety briefing conducted",
+      "description": "Conduct safety briefing with all crew members",
+      "is_required": true,
+      "display_order": 4,
+      "is_active": true
+    },
+    {
+      "id": "check-005",
+      "name": "Emergency equipment verified",
+      "description": "Check first aid kits, fire extinguishers, and emergency exits",
+      "is_required": false,
+      "display_order": 5,
+      "is_active": true
+    },
+    {
+      "id": "check-006",
+      "name": "Communication systems tested",
+      "description": "Test radios and emergency communication systems",
+      "is_required": false,
+      "display_order": 6,
+      "is_active": true
+    },
+    {
+      "id": "check-007",
+      "name": "Weather conditions assessed",
+      "description": "Review weather forecast and assess suitability for operations",
+      "is_required": true,
+      "display_order": 7,
+      "is_active": true
+    },
+    {
+      "id": "check-008",
+      "name": "Permits verified",
+      "description": "Verify all necessary work permits are in place",
+      "is_required": true,
+      "display_order": 8,
+      "is_active": true
+    }
+  ],
   "well_safety_checklists": [
-    {"id": "wc-001", "well_id": "well-001", "checklist_item_id": "check-001", "is_checked": true, "checked_at": "2025-11-28T06:00:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-002", "well_id": "well-001", "checklist_item_id": "check-002", "is_checked": true, "checked_at": "2025-11-28T06:05:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-003", "well_id": "well-001", "checklist_item_id": "check-003", "is_checked": true, "checked_at": "2025-11-28T06:10:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-004", "well_id": "well-001", "checklist_item_id": "check-004", "is_checked": true, "checked_at": "2025-11-28T06:15:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-005", "well_id": "well-001", "checklist_item_id": "check-005", "is_checked": false},
-    {"id": "wc-006", "well_id": "well-002", "checklist_item_id": "check-001", "is_checked": true, "checked_at": "2025-11-15T07:00:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-007", "well_id": "well-002", "checklist_item_id": "check-002", "is_checked": true, "checked_at": "2025-11-15T07:05:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-008", "well_id": "well-002", "checklist_item_id": "check-003", "is_checked": true, "checked_at": "2025-11-15T07:10:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-009", "well_id": "well-002", "checklist_item_id": "check-004", "is_checked": true, "checked_at": "2025-11-15T07:15:00Z", "checked_by": "user-engineer-001"},
-    {"id": "wc-010", "well_id": "well-002", "checklist_item_id": "check-005", "is_checked": true, "checked_at": "2025-11-15T07:20:00Z", "checked_by": "user-engineer-001"}
+    {
+      "id": "wc-001",
+      "well_id": "well-001",
+      "checklist_item_id": "check-001",
+      "is_checked": true,
+      "checked_at": "2025-11-28T06:00:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-002",
+      "well_id": "well-001",
+      "checklist_item_id": "check-002",
+      "is_checked": true,
+      "checked_at": "2025-11-28T06:05:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-003",
+      "well_id": "well-001",
+      "checklist_item_id": "check-003",
+      "is_checked": true,
+      "checked_at": "2025-11-28T06:10:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-004",
+      "well_id": "well-001",
+      "checklist_item_id": "check-004",
+      "is_checked": true,
+      "checked_at": "2025-11-28T06:15:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-005",
+      "well_id": "well-001",
+      "checklist_item_id": "check-005",
+      "is_checked": false
+    },
+    {
+      "id": "wc-006",
+      "well_id": "well-002",
+      "checklist_item_id": "check-001",
+      "is_checked": true,
+      "checked_at": "2025-11-15T07:00:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-007",
+      "well_id": "well-002",
+      "checklist_item_id": "check-002",
+      "is_checked": true,
+      "checked_at": "2025-11-15T07:05:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-008",
+      "well_id": "well-002",
+      "checklist_item_id": "check-003",
+      "is_checked": true,
+      "checked_at": "2025-11-15T07:10:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-009",
+      "well_id": "well-002",
+      "checklist_item_id": "check-004",
+      "is_checked": true,
+      "checked_at": "2025-11-15T07:15:00Z",
+      "checked_by": "user-engineer-001"
+    },
+    {
+      "id": "wc-010",
+      "well_id": "well-002",
+      "checklist_item_id": "check-005",
+      "is_checked": true,
+      "checked_at": "2025-11-15T07:20:00Z",
+      "checked_by": "user-engineer-001"
+    }
   ],
   "hazards": [
     {
@@ -515,18 +817,76 @@
     }
   ],
   "voluntary_action_templates": [
-    {"id": "va-template-001", "title": "Housekeeping Check", "description": "Perform voluntary housekeeping check of your work area", "display_order": 1, "is_active": true},
-    {"id": "va-template-002", "title": "PPE Audit", "description": "Audit personal protective equipment condition and availability", "display_order": 2, "is_active": true},
-    {"id": "va-template-003", "title": "Fire Extinguisher Inspection", "description": "Visual inspection of fire extinguishers in your area", "display_order": 3, "is_active": true},
-    {"id": "va-template-004", "title": "Safety Suggestion Submission", "description": "Submit a safety improvement suggestion", "display_order": 4, "is_active": true},
-    {"id": "va-template-005", "title": "Near-Miss Reporting", "description": "Report any near-miss incidents for preventive analysis", "display_order": 5, "is_active": true}
+    {
+      "id": "va-template-001",
+      "title": "Housekeeping Check",
+      "description": "Perform voluntary housekeeping check of your work area",
+      "display_order": 1,
+      "is_active": true
+    },
+    {
+      "id": "va-template-002",
+      "title": "PPE Audit",
+      "description": "Audit personal protective equipment condition and availability",
+      "display_order": 2,
+      "is_active": true
+    },
+    {
+      "id": "va-template-003",
+      "title": "Fire Extinguisher Inspection",
+      "description": "Visual inspection of fire extinguishers in your area",
+      "display_order": 3,
+      "is_active": true
+    },
+    {
+      "id": "va-template-004",
+      "title": "Safety Suggestion Submission",
+      "description": "Submit a safety improvement suggestion",
+      "display_order": 4,
+      "is_active": true
+    },
+    {
+      "id": "va-template-005",
+      "title": "Near-Miss Reporting",
+      "description": "Report any near-miss incidents for preventive analysis",
+      "display_order": 5,
+      "is_active": true
+    }
   ],
   "voluntary_actions": [
-    {"id": "va-001", "template_id": "va-template-001", "user_id": "user-engineer-001", "is_completed": true, "completed_at": "2025-12-02T10:00:00Z"},
-    {"id": "va-002", "template_id": "va-template-002", "user_id": "user-engineer-001", "is_completed": false},
-    {"id": "va-003", "template_id": "va-template-003", "user_id": "user-engineer-001", "is_completed": true, "completed_at": "2025-12-01T15:00:00Z"},
-    {"id": "va-004", "template_id": "va-template-001", "user_id": "user-engineer-002", "is_completed": false},
-    {"id": "va-005", "template_id": "va-template-003", "user_id": "user-hse-001", "is_completed": true, "completed_at": "2025-12-02T09:00:00Z"}
+    {
+      "id": "va-001",
+      "template_id": "va-template-001",
+      "user_id": "user-engineer-001",
+      "is_completed": true,
+      "completed_at": "2025-12-02T10:00:00Z"
+    },
+    {
+      "id": "va-002",
+      "template_id": "va-template-002",
+      "user_id": "user-engineer-001",
+      "is_completed": false
+    },
+    {
+      "id": "va-003",
+      "template_id": "va-template-003",
+      "user_id": "user-engineer-001",
+      "is_completed": true,
+      "completed_at": "2025-12-01T15:00:00Z"
+    },
+    {
+      "id": "va-004",
+      "template_id": "va-template-001",
+      "user_id": "user-engineer-002",
+      "is_completed": false
+    },
+    {
+      "id": "va-005",
+      "template_id": "va-template-003",
+      "user_id": "user-hse-001",
+      "is_completed": true,
+      "completed_at": "2025-12-02T09:00:00Z"
+    }
   ],
   "daily_reports": [
     {

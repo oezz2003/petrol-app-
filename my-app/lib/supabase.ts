@@ -68,7 +68,53 @@ export const dbHelpers = {
     return { data, error };
   },
 
-  // Hazards
+  // Drilling Workflow
+  getProjects: async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('name');
+    return { data, error };
+  },
+
+  getUnits: async (projectId?: string) => {
+    let query = supabase.from('units').select('*');
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    }
+    const { data, error } = await query.order('unit_number');
+    return { data, error };
+  },
+
+  getWellSections: async (wellId: string) => {
+    const { data, error } = await supabase
+      .from('well_sections')
+      .select('*')
+      .eq('well_id', wellId)
+      .order('created_at');
+    return { data, error };
+  },
+
+  getChecklists: async (wellId: string, sectionId?: string) => {
+    let query = supabase.from('checklists').select('*');
+    query = query.eq('well_id', wellId);
+    if (sectionId) {
+      query = query.eq('section_id', sectionId);
+    }
+    const { data, error } = await query.order('created_at');
+    return { data, error };
+  },
+
+  getApprovals: async (entityType: string, entityId: string) => {
+    const { data, error } = await supabase
+      .from('approvals')
+      .select('*')
+      .eq('entity_type', entityType)
+      .eq('entity_id', entityId)
+      .order('created_at');
+    return { data, error };
+  },
+
   getHazards: async () => {
     const { data, error } = await supabase
       .from('hazards')
@@ -154,7 +200,7 @@ export const dbHelpers = {
 export const storageHelpers = {
   uploadWellPhoto: async (wellId: string, file: File) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${wellId}/${Math.random()}.${fileExt}`;
+    const fileName = `${wellId} / ${Math.random()}.${fileExt}`;
 
     const { data, error } = await supabase.storage
       .from('well-photos')
@@ -171,7 +217,7 @@ export const storageHelpers = {
 
   uploadHazardPhoto: async (hazardId: string, file: File, type: 'before' | 'after') => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${hazardId}/${type}-${Math.random()}.${fileExt}`;
+    const fileName = `${hazardId} / ${type} - ${Math.random()}.${fileExt}`;
 
     const { data, error } = await supabase.storage
       .from('hazard-photos')

@@ -114,6 +114,44 @@ export const mockDbHelpers = {
         };
     },
 
+    // Drilling Workflow
+    getProjects: async () => {
+        await delay(200);
+        return { data: mockData.projects, error: null };
+    },
+
+    getUnits: async (projectId?: string) => {
+        await delay(200);
+        let units = mockData.units;
+        if (projectId) {
+            units = units.filter(u => u.project_id === projectId);
+        }
+        return { data: units, error: null };
+    },
+
+    getWellSections: async (wellId: string) => {
+        await delay(200);
+        const sections = mockData.well_sections.filter(s => s.well_id === wellId);
+        return { data: sections, error: null };
+    },
+
+    getChecklists: async (wellId: string, sectionId?: string) => {
+        await delay(200);
+        let checklists = mockData.checklists.filter(c => c.well_id === wellId);
+        if (sectionId) {
+            checklists = checklists.filter(c => c.section_id === sectionId);
+        }
+        return { data: checklists, error: null };
+    },
+
+    getApprovals: async (entityType: string, entityId: string) => {
+        await delay(200);
+        const approvals = mockData.approvals.filter(a =>
+            a.entity_type === entityType && a.entity_id === entityId
+        );
+        return { data: approvals, error: null };
+    },
+
     // Hazards
     getHazards: async () => {
         await delay(300);

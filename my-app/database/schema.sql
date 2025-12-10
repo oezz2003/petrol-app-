@@ -31,6 +31,29 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
 
 -- =====================================================
+-- PROJECTS & UNITS (HIERARCHY)
+-- =====================================================
+
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    country VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE units (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    unit_type VARCHAR(50) NOT NULL CHECK (unit_type IN ('Rig', 'HFBU', 'Rigless')),
+    unit_number VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_units_project ON units(project_id);
+
+-- =====================================================
 -- WELLS MANAGEMENT
 -- =====================================================
 
@@ -39,8 +62,15 @@ CREATE TABLE wells (
     -- Step 1: Basic Data
     name VARCHAR(255) NOT NULL,
     location VARCHAR(255) NOT NULL,
-    rig_id VARCHAR(100) NOT NULL,
+    rig_id VARCHAR(100), -- Legacy field, use unit_id instead
+    unit_id UUID REFERENCES units(id) ON DELETE SET NULL,
     rig_name VARCHAR(255),
+    
+    -- New Workflow Fields
+    well_type VARCHAR(50),
+    well_shape VARCHAR(50) CHECK (well_shape IN ('Vertical', 'Deviated (J shape)', 'Deviated (S shape)', 'Horizontal')),
+    surface_coordinates VARCHAR(100),
+    
     notes TEXT,
     
     -- Step 4: Additional Details (Personnel)
@@ -142,6 +172,69 @@ CREATE TABLE well_voice_notes (
 );
 
 CREATE INDEX idx_well_voice_notes_well ON well_voice_notes(well_id);
+
+-- =====================================================
+-- DRILLING SECTIONS & OPERATIONS
+-- =====================================================
+
+CREATE TABLE well_sections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    well_id UUID NOT NULL REFERENCES wells(id) ON DELETE CASCADE,
+    section_name VARCHAR(100) NOT NULL, -- e.g., "12.25 inch Section"
+    hole_size DECIMAL(5,2),
+    casing_size DECIMAL(5,2),
+    mud_data JSONB,
+    target_depth DECIMAL(10,2),
+    status VARCHAR(50) DEFAULT 'planned' CHECK (status IN ('planned', 'drilling', 'casing', 'cementing', 'completed')),
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_well_sections_well ON well_sections(well_id);
+
+-- =====================================================
+-- DYNAMIC CHECKLISTS (Workflow)
+-- =====================================================
+
+CREATE TABLE checklists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    well_id UUID REFERENCES wells(id) ON DELETE CASCADE,
+    section_id UUID REFERENCES well_sections(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('Pre-spud', 'Pre-release', 'BHA', 'Casing', 'Cementing', 'BOP', 'Well Head')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+    data JSONB DEFAULT '{}', -- Stores checklist items and values
+    photos JSONB DEFAULT '[]', -- Stores photo URLs and metadata
+    submitted_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    submitted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_checklists_well ON checklists(well_id);
+CREATE INDEX idx_checklists_section ON checklists(section_id);
+
+-- =====================================================
+-- APPROVALS
+-- =====================================================
+
+CREATE TABLE approvals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    entity_type VARCHAR(50) NOT NULL, -- 'well', 'section', 'checklist'
+    entity_id UUID NOT NULL,
+    approval_type VARCHAR(100) NOT NULL, -- e.g., 'TD Confirmation'
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    approver_email VARCHAR(255), -- For client approvals via mail
+    approved_by UUID REFERENCES users(id) ON DELETE SET NULL, -- For internal approvals
+    approved_at TIMESTAMP WITH TIME ZONE,
+    evidence_url TEXT, -- Uploaded email screenshot or document
+    comments TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_approvals_entity ON approvals(entity_type, entity_id);
 
 -- =====================================================
 -- HAZARDS (HAZARD HUNT)

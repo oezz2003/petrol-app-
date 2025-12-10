@@ -11,7 +11,8 @@ import {
     Users,
     Settings,
     ChevronLeft,
-    Shield
+    Shield,
+    Activity
 } from 'lucide-react';
 
 type SidebarProps = {
@@ -20,6 +21,7 @@ type SidebarProps = {
 
 const menuItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Operations', href: '/dashboard/operations', icon: Activity },
     { label: 'Wells', href: '/dashboard/wells', icon: Wrench },
     { label: 'Hazards', href: '/dashboard/hazards', icon: AlertTriangle },
     { label: 'Tasks', href: '/dashboard/tasks', icon: ListTodo },
