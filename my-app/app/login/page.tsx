@@ -57,10 +57,13 @@ export default function LoginPage() {
                     {/* Demo Credentials Info */}
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-sm font-semibold text-blue-900 mb-2">Demo Credentials:</p>
-                        <p className="text-xs text-blue-700">
+                        <p className="text-xs text-blue-700 space-y-1">
+                            <strong>Super Admin:</strong> superadmin@company.com / super123<br />
+                            <span className="text-gray-500 text-[10px]">→ Dashboard access + can create users</span><br />
                             <strong>Admin:</strong> admin@company.com / admin123<br />
-                            <strong>Manager:</strong> sarah.manager@company.com / manager123<br />
-                            <strong>Engineer:</strong> john.engineer@company.com / engineer123
+                            <span className="text-gray-500 text-[10px]">→ Dashboard access only</span><br />
+                            <strong>Engineer:</strong> john.engineer@company.com / engineer123<br />
+                            <span className="text-gray-500 text-[10px]">→ Mobile app only (will be blocked here)</span>
                         </p>
                     </div>
 

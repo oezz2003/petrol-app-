@@ -12,11 +12,19 @@ type User = {
     status: string;
 };
 
+// Roles that can access the dashboard
+const DASHBOARD_ROLES = ['super_admin', 'admin'];
+// Roles that can access the mobile app
+const MOBILE_ROLES = ['engineer', 'manager', 'field_engineer', 'hse_officer'];
+
 type AuthContextType = {
     user: User | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<void>;
+    isSuperAdmin: () => boolean;
+    canAccessDashboard: () => boolean;
+    canAccessMobile: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,7 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signIn = async (email: string, password: string) => {
         const { data, error } = await auth.signIn(email, password);
         if (data && !error) {
-            setUser(data.user as User);
+            // Fetch full user details after auth
+            const userData = await auth.getCurrentUser();
+            setUser(userData as User);
             return { error: null };
         }
         return { error };
@@ -55,8 +65,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
     };
 
+    const isSuperAdmin = () => {
+        return user?.role === 'super_admin';
+    };
+
+    const canAccessDashboard = () => {
+        return user ? DASHBOARD_ROLES.includes(user.role) : false;
+    };
+
+    const canAccessMobile = () => {
+        return user ? MOBILE_ROLES.includes(user.role) : false;
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+        <AuthContext.Provider value={{ user, loading, signIn, signOut, isSuperAdmin, canAccessDashboard, canAccessMobile }}>
             {children}
         </AuthContext.Provider>
     );

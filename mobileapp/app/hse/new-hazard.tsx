@@ -9,7 +9,7 @@ import {
     HazardStatus,
 } from '@/types';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Alert,
     Image,
@@ -18,10 +18,13 @@ import {
     Text,
     TouchableOpacity,
     View,
+    ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { hazards, auth } from '@/lib/api';
 
 export default function NewHazardScreen() {
-    const { addHazard } = useApp();
+    const { currentUser, setCurrentUser, loadHazards } = useApp();
 
     const [formData, setFormData] = useState({
         subject: '',
@@ -34,6 +37,20 @@ export default function NewHazardScreen() {
     const [beforePhoto, setBeforePhoto] = useState<string | undefined>(undefined);
     const [afterPhoto, setAfterPhoto] = useState<string | undefined>(undefined);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [loading, setLoading] = useState(false);
+
+    // Load current user on mount
+    useEffect(() => {
+        const loadUser = async () => {
+            if (!currentUser) {
+                const user = await auth.getCurrentUser();
+                if (user) {
+                    setCurrentUser(user);
+                }
+            }
+        };
+        loadUser();
+    }, []);
 
     const validate = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -52,52 +69,193 @@ export default function NewHazardScreen() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleAddBeforePhoto = () => {
-        // Mock photo
-        setBeforePhoto('https://via.placeholder.com/400x300/ff9900/ffffff?text=Before+Photo');
+    const handleAddBeforePhoto = async () => {
+        // Request camera permissions
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (status !== 'granted') {
+            Alert.alert('Permission Required', 'Camera permission is required to take photos');
+            return;
+        }
+
+        try {
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                setBeforePhoto(result.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to take photo');
+        }
     };
 
-    const handleAddAfterPhoto = () => {
-        // Mock photo
-        setAfterPhoto('https://via.placeholder.com/400x300/00ff00/ffffff?text=After+Photo');
+    const handleAddAfterPhoto = async () => {
+        // Request camera permissions
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (status !== 'granted') {
+            Alert.alert('Permission Required', 'Camera permission is required to take photos');
+            return;
+        }
+
+        try {
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                setAfterPhoto(result.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to take photo');
+        }
     };
 
-    const handleSaveDraft = () => {
-        const hazard: Hazard = {
-            id: Date.now().toString(),
-            ...formData,
-            status: HazardStatus.OPEN,
-            beforePhoto,
-            afterPhoto,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
+    const handleSaveDraft = async () => {
+        if (!currentUser) {
+            Alert.alert('Error', 'You must be logged in to save hazards');
+            return;
+        }
 
-        addHazard(hazard);
-        Alert.alert('Draft Saved', 'Hazard report saved as draft', [
-            { text: 'OK', onPress: () => router.back() },
-        ]);
+        setLoading(true);
+        try {
+            let beforePhotoUrl: string | undefined = undefined;
+            let afterPhotoUrl: string | undefined = undefined;
+
+            // Upload photos first if they exist
+            if (beforePhoto) {
+                // Create a temporary hazard ID for uploading
+                const tempId = `temp_${Date.now()}`;
+                const { data: photoUrl, error: photoError } = await hazards.uploadHazardPhoto(tempId, beforePhoto, 'before');
+                if (!photoError && photoUrl) {
+                    beforePhotoUrl = photoUrl;
+                }
+            }
+
+            if (afterPhoto) {
+                const tempId = `temp_${Date.now()}`;
+                const { data: photoUrl, error: photoError } = await hazards.uploadHazardPhoto(tempId, afterPhoto, 'after');
+                if (!photoError && photoUrl) {
+                    afterPhotoUrl = photoUrl;
+                }
+            }
+
+            const { data, error } = await hazards.createHazard({
+                subject: formData.subject || 'Draft Hazard',
+                description: formData.description || 'No description',
+                location: formData.location || 'Unknown',
+                category: formData.category,
+                priority: formData.priority,
+                status: 'open',
+                before_photo_url: beforePhotoUrl,
+                after_photo_url: afterPhotoUrl,
+                reported_by: currentUser.id,
+            });
+
+            if (error) {
+                Alert.alert('Error', error.message || 'Failed to save draft');
+                return;
+            }
+
+            // Reload hazards
+            await loadHazards();
+
+            Alert.alert('Draft Saved', 'Hazard report saved as draft', [
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        setTimeout(() => {
+                            router.replace('/hse');
+                        }, 100);
+                    }
+                },
+            ]);
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'An unexpected error occurred');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!validate()) {
             return;
         }
 
-        const hazard: Hazard = {
-            id: Date.now().toString(),
-            ...formData,
-            status: HazardStatus.OPEN,
-            beforePhoto,
-            afterPhoto,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
+        if (!currentUser) {
+            Alert.alert('Error', 'You must be logged in to submit hazards');
+            return;
+        }
 
-        addHazard(hazard);
-        Alert.alert('Hazard Submitted', 'Your hazard report has been submitted', [
-            { text: 'OK', onPress: () => router.back() },
-        ]);
+        setLoading(true);
+        try {
+            let beforePhotoUrl: string | undefined = undefined;
+            let afterPhotoUrl: string | undefined = undefined;
+
+            // Upload photos first if they exist
+            if (beforePhoto) {
+                const tempId = `temp_${Date.now()}`;
+                const { data: photoUrl, error: photoError } = await hazards.uploadHazardPhoto(tempId, beforePhoto, 'before');
+                if (photoError) {
+                    Alert.alert('Warning', 'Failed to upload before photo, but hazard will be submitted without it');
+                } else if (photoUrl) {
+                    beforePhotoUrl = photoUrl;
+                }
+            }
+
+            if (afterPhoto) {
+                const tempId = `temp_${Date.now()}`;
+                const { data: photoUrl, error: photoError } = await hazards.uploadHazardPhoto(tempId, afterPhoto, 'after');
+                if (photoError) {
+                    Alert.alert('Warning', 'Failed to upload after photo, but hazard will be submitted without it');
+                } else if (photoUrl) {
+                    afterPhotoUrl = photoUrl;
+                }
+            }
+
+            const { data, error } = await hazards.createHazard({
+                subject: formData.subject,
+                description: formData.description,
+                location: formData.location,
+                category: formData.category,
+                priority: formData.priority,
+                status: 'open',
+                before_photo_url: beforePhotoUrl,
+                after_photo_url: afterPhotoUrl,
+                reported_by: currentUser.id,
+            });
+
+            if (error) {
+                Alert.alert('Error', error.message || 'Failed to submit hazard');
+                return;
+            }
+
+            // Reload hazards to show the new one
+            await loadHazards();
+
+            Alert.alert('Success', 'Your hazard report has been submitted', [
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        setTimeout(() => {
+                            router.replace('/hse');
+                        }, 100);
+                    }
+                },
+            ]);
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'An unexpected error occurred');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -244,15 +402,17 @@ export default function NewHazardScreen() {
             {/* Footer Buttons */}
             <View style={styles.footer}>
                 <Button
-                    title="Save as Draft"
+                    title={loading ? "Saving..." : "Save as Draft"}
                     onPress={handleSaveDraft}
                     variant="outline"
                     style={styles.footerButton}
+                    disabled={loading}
                 />
                 <Button
-                    title="Submit Hazard"
+                    title={loading ? "Submitting..." : "Submit Hazard"}
                     onPress={handleSubmit}
                     style={styles.footerButton}
+                    disabled={loading}
                 />
             </View>
         </View>

@@ -249,6 +249,44 @@ export const mockDbHelpers = {
             active_users: mockData.users.filter(u => u.status === 'active').length
         };
         return { data: stats, error: null };
+    },
+
+    // Create new user (for super admin - mock implementation)
+    createUser: async (userData: {
+        email: string;
+        password: string;
+        first_name: string;
+        last_name: string;
+        role: 'admin' | 'engineer';
+        phone?: string;
+    }) => {
+        await delay(500);
+
+        // Check if email already exists
+        if (mockData.users.some(u => u.email === userData.email)) {
+            return { data: null, error: { message: 'Email already exists' } };
+        }
+
+        const newUser = {
+            id: `user-${Date.now()}`,
+            email: userData.email,
+            password: userData.password,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            role: userData.role,
+            status: 'active' as const,
+            phone: userData.phone || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_login_at: null,
+            profile_picture_url: null,
+            metadata: {}
+        };
+
+        // Add to mock data array
+        (mockData.users as any[]).push(newUser);
+
+        return { data: newUser, error: null };
     }
 };
 

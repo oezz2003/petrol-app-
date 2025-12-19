@@ -17,7 +17,7 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'manager', 'field_engineer', 'hse_officer')),
+    role VARCHAR(50) NOT NULL CHECK (role IN ('super_admin', 'admin', 'engineer', 'manager', 'field_engineer', 'hse_officer')),
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
     profile_picture_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

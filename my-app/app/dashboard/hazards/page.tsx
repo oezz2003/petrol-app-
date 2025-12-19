@@ -24,6 +24,8 @@ export default function HazardsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('all');
+    const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+    const [selectedHazard, setSelectedHazard] = useState<Hazard | null>(null);
 
     useEffect(() => {
         loadHazards();
@@ -35,6 +37,19 @@ export default function HazardsPage() {
             setHazards(data as Hazard[]);
         }
         setLoading(false);
+    };
+
+    const handleImageError = (hazardId: string) => {
+        setBrokenImages(prev => new Set(prev).add(hazardId));
+    };
+
+    const isValidImageUrl = (url: string | null | undefined, hazardId: string) => {
+        if (!url) return false;
+        // Check if it's a local file URI (won't work in browser)
+        if (url.startsWith('file://') || url.startsWith('content://')) return false;
+        // Check if this image has failed to load before
+        if (brokenImages.has(hazardId)) return false;
+        return true;
     };
 
     const filteredHazards = hazards.filter(hazard => {
@@ -126,15 +141,28 @@ export default function HazardsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {filteredHazards.map((hazard) => (
                     <div key={hazard.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
-                        {hazard.before_photo_url && (
+                        {isValidImageUrl(hazard.before_photo_url, hazard.id) ? (
                             <div className="h-48 bg-gray-200 relative overflow-hidden">
-                                <img src={hazard.before_photo_url} alt={hazard.subject} className="w-full h-full object-cover" />
+                                <img
+                                    src={hazard.before_photo_url!}
+                                    alt={hazard.subject}
+                                    className="w-full h-full object-cover"
+                                    onError={() => handleImageError(hazard.id)}
+                                />
                                 <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm px-2 py-1 rounded text-white text-xs flex items-center">
                                     <ImageIcon className="w-3 h-3 mr-1" />
                                     Before
                                 </div>
                             </div>
-                        )}
+                        ) : hazard.before_photo_url ? (
+                            <div className="h-48 bg-gray-100 relative overflow-hidden flex items-center justify-center">
+                                <div className="text-center text-gray-500">
+                                    <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                    <p className="text-sm">Photo uploaded from mobile</p>
+                                    <p className="text-xs text-gray-400">(Not accessible from web)</p>
+                                </div>
+                            </div>
+                        ) : null}
                         <div className="p-6">
                             <div className="flex items-start justify-between mb-3">
                                 <h3 className="text-lg font-bold text-gray-900 flex-1">{hazard.subject}</h3>
@@ -169,7 +197,10 @@ export default function HazardsPage() {
                                 </div>
                             </div>
                             <div className="mt-4 pt-4 border-t border-gray-100">
-                                <button className="w-full py-2 px-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2">
+                                <button
+                                    onClick={() => setSelectedHazard(hazard)}
+                                    className="w-full py-2 px-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                                >
                                     <Eye className="w-4 h-4" />
                                     <span>View Details</span>
                                 </button>
@@ -182,6 +213,131 @@ export default function HazardsPage() {
             {filteredHazards.length === 0 && (
                 <div className="text-center py-12 bg-white rounded-xl shadow-md">
                     <p className="text-gray-600">No hazards found matching your criteria</p>
+                </div>
+            )}
+
+            {/* Hazard Details Modal */}
+            {selectedHazard && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedHazard(null)}>
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 text-white">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-2">{selectedHazard.subject}</h2>
+                                    <div className="flex gap-2">
+                                        {getPriorityBadge(selectedHazard.priority)}
+                                        {getStatusBadge(selectedHazard.status)}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedHazard(null)}
+                                    className="text-white hover:bg-white/20 rounded-full p-2 transition"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-6">
+                            {/* Photos */}
+                            {(selectedHazard.before_photo_url || selectedHazard.after_photo_url) && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {isValidImageUrl(selectedHazard.before_photo_url, selectedHazard.id) ? (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-2">Before Photo</h3>
+                                            <img
+                                                src={selectedHazard.before_photo_url!}
+                                                alt="Before"
+                                                className="w-full h-64 object-cover rounded-lg"
+                                                onError={() => handleImageError(selectedHazard.id)}
+                                            />
+                                        </div>
+                                    ) : selectedHazard.before_photo_url ? (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-2">Before Photo</h3>
+                                            <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                <div className="text-center text-gray-500">
+                                                    <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                                    <p className="text-sm">Photo from mobile</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {isValidImageUrl(selectedHazard.after_photo_url, selectedHazard.id) ? (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-2">After Photo</h3>
+                                            <img
+                                                src={selectedHazard.after_photo_url!}
+                                                alt="After"
+                                                className="w-full h-64 object-cover rounded-lg"
+                                                onError={() => handleImageError(selectedHazard.id)}
+                                            />
+                                        </div>
+                                    ) : selectedHazard.after_photo_url ? (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-2">After Photo</h3>
+                                            <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                <div className="text-center text-gray-500">
+                                                    <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                                    <p className="text-sm">Photo from mobile</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            )}
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2">
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Description</h3>
+                                    <p className="text-gray-900">{selectedHazard.description}</p>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Location</h3>
+                                    <div className="flex items-center text-gray-900">
+                                        <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+                                        {selectedHazard.location}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Category</h3>
+                                    <p className="text-gray-900 capitalize">{selectedHazard.category}</p>
+                                </div>
+
+                                {selectedHazard.reported_by_user && (
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Reported By</h3>
+                                        <p className="text-gray-900">
+                                            {selectedHazard.reported_by_user.first_name} {selectedHazard.reported_by_user.last_name}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Reported Date</h3>
+                                    <p className="text-gray-900">{new Date(selectedHazard.reported_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="bg-gray-50 p-6 flex justify-end gap-3">
+                            <button
+                                onClick={() => setSelectedHazard(null)}
+                                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { db } from '@/lib/api-client';
-import { Search, Filter, Mail, Phone, Shield } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Search, Filter, Mail, Phone, Shield, UserPlus, X } from 'lucide-react';
 
 type User = {
     id: string;
@@ -17,19 +18,27 @@ type User = {
 };
 
 export default function UsersPage() {
+    const { isSuperAdmin } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         loadUsers();
     }, []);
 
     const loadUsers = async () => {
-        const { data } = await db.getUsers();
-        if (data) {
-            setUsers(data as User[]);
+        try {
+            // Use API route to bypass RLS
+            const response = await fetch('/api/users/list');
+            const result = await response.json();
+            if (result.data) {
+                setUsers(result.data as User[]);
+            }
+        } catch (error) {
+            console.error('Failed to load users:', error);
         }
         setLoading(false);
     };
@@ -44,7 +53,9 @@ export default function UsersPage() {
 
     const getRoleBadge = (role: string) => {
         const config: Record<string, { bg: string; text: string; label: string }> = {
+            super_admin: { bg: 'bg-red-100', text: 'text-red-700', label: 'Super Admin' },
             admin: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Admin' },
+            engineer: { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'Engineer' },
             manager: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Manager' },
             field_engineer: { bg: 'bg-green-100', text: 'text-green-700', label: 'Field Engineer' },
             hse_officer: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'HSE Officer' }
@@ -81,7 +92,18 @@ export default function UsersPage() {
                     <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
                     <p className="text-gray-600 mt-2">Manage system users and roles</p>
                 </div>
-                <span className="text-sm text-gray-600">Total: {filteredUsers.length}</span>
+                <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-600">Total: {filteredUsers.length}</span>
+                    {isSuperAdmin() && (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2"
+                        >
+                            <UserPlus className="w-5 h-5" />
+                            Create User
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-md p-4 border border-gray-100">
@@ -102,7 +124,9 @@ export default function UsersPage() {
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     >
                         <option value="all">All Roles</option>
+                        <option value="super_admin">Super Admin</option>
                         <option value="admin">Admin</option>
+                        <option value="engineer">Engineer</option>
                         <option value="manager">Manager</option>
                         <option value="field_engineer">Field Engineer</option>
                         <option value="hse_officer">HSE Officer</option>
@@ -172,6 +196,193 @@ export default function UsersPage() {
                     <p className="text-gray-600">No users found matching your criteria</p>
                 </div>
             )}
+
+            {/* Create User Modal */}
+            {showCreateModal && (
+                <CreateUserModal
+                    onClose={() => setShowCreateModal(false)}
+                    onUserCreated={() => {
+                        loadUsers();
+                        setShowCreateModal(false);
+                    }}
+                />
+            )}
         </div>
     );
 }
+
+// Create User Modal Component
+function CreateUserModal({ onClose, onUserCreated }: { onClose: () => void; onUserCreated: () => void }) {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [role, setRole] = useState<'admin' | 'engineer'>('engineer');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            // Use API route for user creation (requires service role key)
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    role,
+                    phone: phone || undefined,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                setError(result.error || 'Failed to create user');
+            } else {
+                onUserCreated();
+            }
+        } catch (err) {
+            setError('An unexpected error occurred');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-white">Create New User</h2>
+                    <button onClick={onClose} className="text-white/80 hover:text-white">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-600">{error}</p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input
+                                type="text"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input
+                                type="text"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone (Optional)</label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setRole('engineer')}
+                                className={`p-3 rounded-lg border-2 transition-all ${role === 'engineer'
+                                    ? 'border-cyan-500 bg-cyan-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                            >
+                                <div className="text-left">
+                                    <p className="font-semibold text-gray-900">Engineer</p>
+                                    <p className="text-xs text-gray-500">Mobile app access only</p>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRole('admin')}
+                                className={`p-3 rounded-lg border-2 transition-all ${role === 'admin'
+                                    ? 'border-purple-500 bg-purple-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                            >
+                                <div className="text-left">
+                                    <p className="font-semibold text-gray-900">Admin</p>
+                                    <p className="text-xs text-gray-500">Dashboard access only</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-50"
+                        >
+                            {loading ? 'Creating...' : 'Create User'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+

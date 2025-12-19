@@ -12,33 +12,45 @@ import {
     WellStatus,
 } from '@/types';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import * as api from '@/lib/api';
 
 // ============= CONTEXT TYPE =============
 
 interface AppContextType {
+    // Current User
+    currentUser: any | null;
+    setCurrentUser: (user: any | null) => void;
+
     // Wells
     wells: Well[];
-    addWell: (well: Well) => void;
-    updateWell: (id: string, updates: Partial<Well>) => void;
+    addWell: (well: Well) => Promise<void>;
+    updateWell: (id: string, updates: Partial<Well>) => Promise<void>;
     deleteWell: (id: string) => void;
+    loadWells: () => Promise<void>;
 
     // HSE Tasks
     tasks: AssignedTask[];
-    updateTask: (id: string, updates: Partial<AssignedTask>) => void;
+    updateTask: (id: string, updates: Partial<AssignedTask>) => Promise<void>;
+    loadTasks: () => Promise<void>;
 
     // Hazards
     hazards: Hazard[];
-    addHazard: (hazard: Hazard) => void;
-    updateHazard: (id: string, updates: Partial<Hazard>) => void;
+    addHazard: (hazard: Hazard) => Promise<void>;
+    updateHazard: (id: string, updates: Partial<Hazard>) => Promise<void>;
     deleteHazard: (id: string) => void;
+    loadHazards: () => Promise<void>;
 
     // Voluntary Actions
     voluntaryActions: VoluntaryAction[];
-    updateVoluntaryAction: (id: string, updates: Partial<VoluntaryAction>) => void;
+    updateVoluntaryAction: (id: string, updates: Partial<VoluntaryAction>) => Promise<void>;
+    loadVoluntaryActions: () => Promise<void>;
 
     // Daily Reports
     dailyReports: DailyReport[];
-    addDailyReport: (report: DailyReport) => void;
+    addDailyReport: (report: DailyReport) => Promise<void>;
+
+    // Loading states
+    loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -190,35 +202,61 @@ const mockVoluntaryActions: VoluntaryAction[] = [
 // ============= PROVIDER COMPONENT =============
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [wells, setWells] = useState<Well[]>(mockWells);
-    const [tasks, setTasks] = useState<AssignedTask[]>(mockTasks);
-    const [hazards, setHazards] = useState<Hazard[]>(mockHazards);
-    const [voluntaryActions, setVoluntaryActions] = useState<VoluntaryAction[]>(mockVoluntaryActions);
+    const [currentUser, setCurrentUser] = useState<any | null>(null);
+    const [wells, setWells] = useState<Well[]>([]);
+    const [tasks, setTasks] = useState<AssignedTask[]>([]);
+    const [hazards, setHazards] = useState<Hazard[]>([]);
+    const [voluntaryActions, setVoluntaryActions] = useState<VoluntaryAction[]>([]);
     const [dailyReports, setDailyReports] = useState<DailyReport[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    // Update overdue tasks based on current time
+    // Load data when user changes
     useEffect(() => {
-        const interval = setInterval(() => {
-            const now = new Date();
-            setTasks((prevTasks) =>
-                prevTasks.map((task) => {
-                    if (task.status !== TaskStatus.COMPLETED && task.dueDate < now) {
-                        return { ...task, status: TaskStatus.OVERDUE };
-                    }
-                    return task;
-                })
-            );
-        }, 60000); // Check every minute
-
-        return () => clearInterval(interval);
-    }, []);
+        if (currentUser) {
+            loadWells();
+            loadTasks();
+            loadHazards();
+            loadVoluntaryActions();
+        } else {
+            // Clear data when user logs out
+            setWells([]);
+            setTasks([]);
+            setHazards([]);
+            setVoluntaryActions([]);
+            setDailyReports([]);
+        }
+    }, [currentUser]);
 
     // Wells operations
-    const addWell = (well: Well) => {
-        setWells((prev) => [...prev, well]);
+    const loadWells = async () => {
+        if (!currentUser) return;
+        setLoading(true);
+        try {
+            // For now, load all wells - you can filter by user if needed
+            const { data, error } = await api.wells.getWells();
+            if (!error && data) {
+                // Transform data to match Well type - this is a simplified version
+                // You'll need to map the database fields to your Well type properly
+                setWells(data as any);
+            }
+        } catch (error) {
+            console.error('Error loading wells:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const updateWell = (id: string, updates: Partial<Well>) => {
+    const addWell = async (well: Well) => {
+        // Optimistic update
+        setWells((prev) => [...prev, well]);
+
+        // Note: This is a simplified version
+        // You'll need to properly map Well type to database format
+        // For full implementation, see the new-well.tsx update
+    };
+
+    const updateWell = async (id: string, updates: Partial<Well>) => {
+        // Optimistic update
         setWells((prev) =>
             prev.map((well) =>
                 well.id === id ? { ...well, ...updates, updatedAt: new Date() } : well
@@ -231,25 +269,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     // Tasks operations
-    const updateTask = (id: string, updates: Partial<AssignedTask>) => {
+    const loadTasks = async () => {
+        if (!currentUser) return;
+        setLoading(true);
+        try {
+            const { data, error } = await api.tasks.getMyTasks(currentUser.id);
+            if (!error && data) {
+                // Transform to AssignedTask format
+                setTasks(data as any);
+            }
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateTask = async (id: string, updates: Partial<AssignedTask>) => {
+        // Optimistic update
         setTasks((prev) =>
             prev.map((task) =>
                 task.id === id ? { ...task, ...updates, updatedAt: new Date() } : task
             )
         );
+
+        // API call
+        try {
+            await api.tasks.updateTaskStatus(id, updates.status as any);
+        } catch (error) {
+            console.error('Error updating task:', error);
+            // Reload on error
+            loadTasks();
+        }
     };
 
     // Hazards operations
-    const addHazard = (hazard: Hazard) => {
-        setHazards((prev) => [...prev, hazard]);
+    const loadHazards = async () => {
+        if (!currentUser) return;
+        setLoading(true);
+        try {
+            const { data, error } = await api.hazards.getMyHazards(currentUser.id);
+            if (!error && data) {
+                setHazards(data as any);
+            }
+        } catch (error) {
+            console.error('Error loading hazards:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const updateHazard = (id: string, updates: Partial<Hazard>) => {
+    const addHazard = async (hazard: Hazard) => {
+        // Optimistic update
+        setHazards((prev) => [...prev, hazard]);
+
+        // Note: Full implementation in new-hazard.tsx
+    };
+
+    const updateHazard = async (id: string, updates: Partial<Hazard>) => {
+        // Optimistic update
         setHazards((prev) =>
             prev.map((hazard) =>
                 hazard.id === id ? { ...hazard, ...updates, updatedAt: new Date() } : hazard
             )
         );
+
+        // API call if status update
+        if (updates.status) {
+            try {
+                await api.hazards.updateHazardStatus(id, updates.status);
+            } catch (error) {
+                console.error('Error updating hazard:', error);
+                loadHazards();
+            }
+        }
     };
 
     const deleteHazard = (id: string) => {
@@ -257,32 +350,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     // Voluntary Actions operations
-    const updateVoluntaryAction = (id: string, updates: Partial<VoluntaryAction>) => {
+    const loadVoluntaryActions = async () => {
+        if (!currentUser) return;
+        try {
+            const { data: templates, error: templatesError } = await api.voluntaryActions.getTemplates();
+            const { data: userActions, error: actionsError } = await api.voluntaryActions.getUserActions(currentUser.id);
+
+            if (!templatesError && templates) {
+                // Merge templates with user completions
+                const merged = templates.map((template: any) => {
+                    const userAction = userActions?.find((ua: any) => ua.template_id === template.id);
+                    return {
+                        id: template.id,
+                        title: template.title,
+                        description: template.description,
+                        completed: userAction?.is_completed || false,
+                    };
+                });
+                setVoluntaryActions(merged);
+            }
+        } catch (error) {
+            console.error('Error loading voluntary actions:', error);
+        }
+    };
+
+    const updateVoluntaryAction = async (id: string, updates: Partial<VoluntaryAction>) => {
+        // Optimistic update
         setVoluntaryActions((prev) =>
             prev.map((action) => (action.id === id ? { ...action, ...updates } : action))
         );
+
+        // API call
+        if (currentUser && updates.completed !== undefined) {
+            try {
+                await api.voluntaryActions.toggleAction(id, currentUser.id, updates.completed);
+            } catch (error) {
+                console.error('Error updating voluntary action:', error);
+                loadVoluntaryActions();
+            }
+        }
     };
 
     // Daily Reports operations
-    const addDailyReport = (report: DailyReport) => {
+    const addDailyReport = async (report: DailyReport) => {
         setDailyReports((prev) => [...prev, report]);
+
+        // Note: Full implementation in daily-report-modal.tsx
     };
 
     const value: AppContextType = {
+        currentUser,
+        setCurrentUser,
         wells,
         addWell,
         updateWell,
         deleteWell,
+        loadWells,
         tasks,
         updateTask,
+        loadTasks,
         hazards,
         addHazard,
         updateHazard,
         deleteHazard,
+        loadHazards,
         voluntaryActions,
         updateVoluntaryAction,
+        loadVoluntaryActions,
         dailyReports,
         addDailyReport,
+        loading,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

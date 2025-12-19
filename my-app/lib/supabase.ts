@@ -33,8 +33,29 @@ export const authHelpers = {
   },
 
   getCurrentUser: async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    // First get auth session for token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    try {
+      // Use API route to bypass RLS and get full user data
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch user from API');
+        return null;
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      return null;
+    }
   },
 
   onAuthStateChange: (callback: (event: string, session: any) => void) => {
@@ -192,6 +213,45 @@ export const dbHelpers = {
       .from('dashboard_statistics')
       .select('*')
       .single();
+    return { data, error };
+  },
+
+  // Create new user (for super admin)
+  createUser: async (userData: {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    role: 'admin' | 'engineer';
+    phone?: string;
+  }) => {
+    // First create the auth user
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: userData.email,
+      password: userData.password,
+      email_confirm: true, // Auto-confirm email
+    });
+
+    if (authError) {
+      return { data: null, error: authError };
+    }
+
+    // Then create the user record in the users table
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{
+        id: authData.user.id,
+        email: userData.email,
+        password_hash: 'managed_by_supabase_auth',
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        role: userData.role,
+        status: 'active',
+        phone: userData.phone || null,
+      }])
+      .select()
+      .single();
+
     return { data, error };
   }
 };

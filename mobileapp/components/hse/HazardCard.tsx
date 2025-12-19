@@ -40,7 +40,7 @@ export const HazardCard: React.FC<HazardCardProps> = ({ hazard, onPress }) => {
                 </View>
 
                 <Text style={styles.date}>
-                    Created: {hazard.createdAt.toLocaleDateString()}
+                    Created: {hazard.createdAt ? new Date(hazard.createdAt).toLocaleDateString() : 'Just now'}
                 </Text>
             </Card>
         </TouchableOpacity>
